@@ -40,6 +40,7 @@ export default function V0Page() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationType, setGenerationType] = useState("component")
   const [showSettings, setShowSettings] = useState(false)
+  const [designSpec, setDesignSpec] = useState("")
 
   const handleGenerate = async () => {
     if (!apiKey || !selectedModel || !prompt) {

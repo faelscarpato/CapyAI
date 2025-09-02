@@ -111,6 +111,14 @@ export default function V0Page() {
               <span className="text-xl font-bold text-gray-900">v0 Clone</span>
             </Link>
             <div className="flex items-center space-x-4">
+              <ProjectManager 
+                currentCode={generatedCode}
+                onLoadProject={(code) => setGeneratedCode(code)}
+              />
+              <DeploymentPanel 
+                code={generatedCode}
+                projectName="my-component"
+              />
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">

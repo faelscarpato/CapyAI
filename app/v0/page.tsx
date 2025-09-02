@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Split } from "@/components/ui/split-pane"
 import { CodeEditor } from "@/components/code-editor"
 import { Preview } from "@/components/preview"
+import { ProjectManager } from "@/components/project-manager"
+import { DeploymentPanel } from "@/components/deployment-panel"
 import { Bot, Settings, Sparkles, Code, Eye, Download, Play, Image, Palette } from "lucide-react"
 import Link from "next/link"
 

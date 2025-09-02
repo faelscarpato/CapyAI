@@ -317,6 +317,20 @@ export default function V0Page() {
                 </div>
               </div>
             </TabsContent>
+
+            {/* Design Specification Tab (only show for image generation) */}
+            {designSpec && (
+              <TabsContent value="design" className="flex-1 mt-0 p-4 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <h3 className="text-lg font-semibold mb-4">Design Specification</h3>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg">
+                      {designSpec}
+                    </pre>
+                  </div>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>

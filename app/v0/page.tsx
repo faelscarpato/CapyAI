@@ -50,22 +50,45 @@ export default function V0Page() {
 
     setIsGenerating(true)
     try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey,
-          model: selectedModel,
-          prompt,
-          type: generationType
+      if (generationType === "image") {
+        // Generate UI design specification and code
+        const response = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey,
+            prompt,
+            style: "modern"
+          })
         })
-      })
 
-      const data = await response.json()
-      if (data.error) {
-        alert(`Error: ${data.error}`)
+        const data = await response.json()
+        if (data.error) {
+          alert(`Error: ${data.error}`)
+        } else {
+          setDesignSpec(data.designSpec)
+          setGeneratedCode(data.code)
+        }
       } else {
-        setGeneratedCode(data.code)
+        // Generate code directly
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey,
+            model: selectedModel,
+            prompt,
+            type: generationType
+          })
+        })
+
+        const data = await response.json()
+        if (data.error) {
+          alert(`Error: ${data.error}`)
+        } else {
+          setGeneratedCode(data.code)
+          setDesignSpec("") // Clear design spec for code generation
+        }
       }
     } catch (error) {
       alert(`Error: ${error}`)

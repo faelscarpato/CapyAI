@@ -288,6 +288,12 @@ export default function V0Page() {
                   <Play className="h-4 w-4 mr-2" />
                   Split View
                 </TabsTrigger>
+                {designSpec && (
+                  <TabsTrigger value="design" className="flex items-center">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Design Spec
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 

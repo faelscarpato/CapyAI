@@ -124,6 +124,9 @@ export default function HomePage() {
               <Link href="/catalog">
                 <Button variant="ghost">Catalog</Button>
               </Link>
+              <Link href="/v0">
+                <Button variant="default">v0 Clone</Button>
+              </Link>
             </div>
           </div>
         </div>

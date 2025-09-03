@@ -48,7 +48,9 @@ export function ProjectManager({ currentCode, onLoadProject }: ProjectManagerPro
     setProjects(updatedProjects)
     
     // Save to localStorage
-    localStorage.setItem('v0-projects', JSON.stringify(updatedProjects))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('v0-projects', JSON.stringify(updatedProjects))
+    }
     
     setProjectName("")
     setProjectDescription("")

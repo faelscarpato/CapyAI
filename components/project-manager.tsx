@@ -65,7 +65,9 @@ export function ProjectManager({ currentCode, onLoadProject }: ProjectManagerPro
   const deleteProject = (projectId: string) => {
     const updatedProjects = projects.filter(p => p.id !== projectId)
     setProjects(updatedProjects)
-    localStorage.setItem('v0-projects', JSON.stringify(updatedProjects))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('v0-projects', JSON.stringify(updatedProjects))
+    }
   }
 
   const exportProject = (project: Project) => {

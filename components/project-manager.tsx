@@ -77,21 +77,23 @@ export function ProjectManager({ currentCode, onLoadProject }: ProjectManagerPro
   }
 
   // Load projects from localStorage on component mount
-  useState(() => {
-    const saved = localStorage.getItem('v0-projects')
-    if (saved) {
-      try {
-        const parsedProjects = JSON.parse(saved).map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-          updatedAt: new Date(p.updatedAt)
-        }))
-        setProjects(parsedProjects)
-      } catch (error) {
-        console.error('Error loading projects:', error)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('v0-projects')
+      if (saved) {
+        try {
+          const parsedProjects = JSON.parse(saved).map((p: any) => ({
+            ...p,
+            createdAt: new Date(p.createdAt),
+            updatedAt: new Date(p.updatedAt)
+          }))
+          setProjects(parsedProjects)
+        } catch (error) {
+          console.error('Error loading projects:', error)
+        }
       }
     }
-  })
+  }, [])
 
   return (
     <div className="flex space-x-2">

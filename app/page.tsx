@@ -122,12 +122,15 @@ export default function HomePage() {
               <Bot className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">AI Agents Hub</span>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex space-x-2 sm:space-x-4">
               <Link href="/">
                 <Button variant="ghost">Home</Button>
               </Link>
               <Link href="/catalog">
                 <Button variant="ghost">Catalog</Button>
+              </Link>
+              <Link href="/studio">
+                <Button variant="ghost">Studio</Button>
               </Link>
               <button
                 className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
@@ -151,7 +154,7 @@ export default function HomePage() {
             Access a curated collection of specialized AI agents designed to enhance your productivity, creativity, and
             problem-solving capabilities. Each agent is ready to assist you with specific tasks.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button 
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-lg font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 py-3"
               onClick={() => window.location.href = '/v0'}
@@ -159,6 +162,11 @@ export default function HomePage() {
               Try v0 Clone - Generate UI with AI
               <Sparkles className="ml-2 h-5 w-5" />
             </button>
+            <Link href="/studio">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-3 bg-transparent">
+                Open Studio (Images)
+              </Button>
+            </Link>
             <Link href="/catalog">
               <Button size="lg" variant="outline" className="text-lg px-8 py-3 bg-transparent">
                 Explore AI Agents

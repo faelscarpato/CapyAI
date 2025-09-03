@@ -15,21 +15,23 @@ import { CodeEditor } from "@/components/code-editor"
 import { Preview } from "@/components/preview"
 import { ProjectManager } from "@/components/project-manager"
 import { DeploymentPanel } from "@/components/deployment-panel"
-import { Bot, Settings, Sparkles, Code, Eye, Download, Play, Image, Palette } from "lucide-react"
+import { Bot, Settings, Sparkles, Code, Eye, Play, Palette, Send } from "lucide-react"
 import Link from "next/link"
 
 const GEMINI_MODELS = [
-  { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Most capable model for complex tasks" },
-  { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Fast model for quick generations" },
-  { id: "gemini-pro", name: "Gemini Pro", description: "Balanced performance and speed" },
-  { id: "gemini-pro-vision", name: "Gemini Pro Vision", description: "Multimodal model with vision capabilities" }
+  { id: "models/gemini-2.5-flash-image-preview", name: "Gemini 2.5 Flash Image Preview", description: "Fast, preview image + code" },
+  { id: "models/gemini-2.5-pro", name: "Gemini 2.5 Pro", description: "Most capable for complex tasks" },
+  { id: "models/gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "Fast generation for UI code" },
+  { id: "models/gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", description: "Lightweight, cost-efficient" },
+  { id: "models/gemini-2.0-flash-preview-image-generation", name: "Gemini 2.0 Flash Preview Image Gen", description: "Preview image generation" },
+  { id: "models/gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "General fast generation" },
+  { id: "models/gemini-2.0-flash-lite", name: "Gemini 2.0 Flash Lite", description: "Lightweight fast generation" },
 ]
 
 const GENERATION_TYPES = [
   { id: "component", name: "UI Component", icon: Palette, description: "Generate React components" },
   { id: "page", name: "Full Page", icon: Code, description: "Generate complete pages" },
   { id: "app", name: "Full App", icon: Bot, description: "Generate entire applications" },
-  { id: "image", name: "UI Design", icon: Image, description: "Generate UI mockups and designs" }
 ]
 
 export default function V0Page() {
@@ -41,53 +43,61 @@ export default function V0Page() {
   const [generationType, setGenerationType] = useState("component")
   const [showSettings, setShowSettings] = useState(false)
   const [designSpec, setDesignSpec] = useState("")
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([])
+  const [chatInput, setChatInput] = useState("")
+  const [siteType, setSiteType] = useState<'website' | 'webapp'>('website')
+  const [cssFramework, setCssFramework] = useState<'none' | 'tailwind' | 'bootstrap' | 'bulma' | 'materialize'>('tailwind')
+  const [iconSet, setIconSet] = useState<'none' | 'fontawesome' | 'lucide' | 'material-icons'>('fontawesome')
+  const [animationLib, setAnimationLib] = useState<'none' | 'animatecss' | 'aos'>('animatecss')
 
   const handleGenerate = async () => {
-    if (!apiKey || !selectedModel || !prompt) {
-      alert("Please provide API key, select a model, and enter a prompt")
+    if (!apiKey || !selectedModel) {
+      alert("Please provide API key and select a model")
       return
     }
 
     setIsGenerating(true)
     try {
-      if (generationType === "image") {
-        // Generate UI design specification and code
-        const response = await fetch("/api/generate-image", {
+      {
+        const historyText = messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')
+        const basePrompt = (prompt && prompt.trim().length > 0) ? prompt : (historyText || 'Crie uma página inicial moderna.')
+        // Live stream code directly
+        const response = await fetch("/api/generate/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey,
-            prompt,
-            style: "modern"
+          body: JSON.stringify({ 
+            apiKey, 
+            model: selectedModel, 
+            prompt: basePrompt, 
+            type: generationType,
+            options: { siteType, cssFramework, iconSet, animationLib, format: 'single-html' }
           })
         })
 
-        const data = await response.json()
-        if (data.error) {
-          alert(`Error: ${data.error}`)
-        } else {
-          setDesignSpec(data.designSpec)
-          setGeneratedCode(data.code)
-        }
-      } else {
-        // Generate code directly
-        const response = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey,
-            model: selectedModel,
-            prompt,
-            type: generationType
+        if (!response.body) {
+          // Fallback to non-streaming
+          const fallback = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ apiKey, model: selectedModel, prompt: basePrompt, type: generationType, options: { siteType, cssFramework, iconSet, animationLib, format: 'single-html' } })
           })
-        })
-
-        const data = await response.json()
-        if (data.error) {
-          alert(`Error: ${data.error}`)
+          const data = await fallback.json()
+          if (data.error) alert(`Error: ${data.error}`)
+          else setGeneratedCode(data.code)
+          setDesignSpec("")
         } else {
-          setGeneratedCode(data.code)
-          setDesignSpec("") // Clear design spec for code generation
+          const reader = response.body.getReader()
+          const decoder = new TextDecoder()
+          setGeneratedCode("")
+          setDesignSpec("")
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value)
+            // Filter out markdown fences just in case
+            const clean = chunk.replaceAll("```", "")
+            setGeneratedCode(prev => prev + clean)
+          }
         }
       }
     } catch (error) {
@@ -168,6 +178,9 @@ export default function V0Page() {
                   </div>
                 </DialogContent>
               </Dialog>
+              <Link href="/studio">
+                <Button variant="outline" size="sm">Studio</Button>
+              </Link>
               <Link href="/">
                 <Button variant="ghost">Back to Hub</Button>
               </Link>
@@ -175,98 +188,169 @@ export default function V0Page() {
           </div>
         </div>
       </nav>
-
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* Left Panel - Generation Controls */}
-        <div className="w-80 bg-white border-r flex flex-col">
+      
+      <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)]">
+        {/* Chat Panel */}
+        <div className="w-full md:w-[380px] lg:w-[440px] bg-white border-b md:border-b-0 md:border-r flex flex-col">
           <div className="p-4 border-b">
-            <h2 className="text-lg font-semibold mb-4">Generate UI</h2>
-            
-            {/* Generation Type Selection */}
-            <div className="space-y-3 mb-4">
-              <Label>Generation Type</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {GENERATION_TYPES.map((type) => {
-                  const Icon = type.icon
-                  return (
-                    <Button
-                      key={type.id}
-                      variant={generationType === type.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setGenerationType(type.id)}
-                      className="h-auto p-3 flex flex-col items-center"
-                    >
-                      <Icon className="h-4 w-4 mb-1" />
-                      <span className="text-xs">{type.name}</span>
-                    </Button>
-                  )
-                })}
+            <h2 className="text-lg font-semibold">CapyIDE Chat</h2>
+            <p className="text-xs text-gray-500 mt-1">Converse para gerar código ({generationType})</p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {GENERATION_TYPES.map((type) => {
+                const Icon = type.icon
+                const active = generationType === type.id
+                return (
+                  <Button key={type.id} size="sm" variant={active ? 'default' : 'outline'} onClick={() => setGenerationType(type.id)} className="h-8">
+                    <Icon className="h-3 w-3 mr-1" />
+                    <span className="text-xs">{type.name.split(' ')[0]}</span>
+                  </Button>
+                )
+              })}
+            </div>
+            {/* Advanced options: site type + frameworks */}
+            <div className="mt-3 space-y-3">
+              <div>
+                <Label className="text-xs">Tipo</Label>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <Button size="sm" variant={siteType==='website'?'default':'outline'} className="h-8" onClick={()=>setSiteType('website')}>Website</Button>
+                  <Button size="sm" variant={siteType==='webapp'?'default':'outline'} className="h-8" onClick={()=>setSiteType('webapp')}>WebApp</Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">CSS</Label>
+                  <Select value={cssFramework} onValueChange={(v:any)=>setCssFramework(v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="CSS" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="tailwind">Tailwind (CDN)</SelectItem>
+                      <SelectItem value="bootstrap">Bootstrap 5</SelectItem>
+                      <SelectItem value="bulma">Bulma</SelectItem>
+                      <SelectItem value="materialize">Materialize</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Icons</Label>
+                  <Select value={iconSet} onValueChange={(v:any)=>setIconSet(v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="ÍIcons" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="fontawesome">Font Awesome</SelectItem>
+                      <SelectItem value="lucide">Lucide</SelectItem>
+                      <SelectItem value="material-icons">Material Icons</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Animações</Label>
+                  <Select value={animationLib} onValueChange={(v:any)=>setAnimationLib(v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Animações" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="animatecss">Animate.css</SelectItem>
+                      <SelectItem value="aos">AOS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-
-            {/* Prompt Input */}
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="prompt">Describe what you want to build</Label>
-              <Textarea
-                id="prompt"
-                placeholder="e.g., Create a modern login form with email and password fields, styled with Tailwind CSS"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            {/* API Status */}
-            <div className="mb-4">
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${apiKey && selectedModel ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm text-gray-600">
-                  {apiKey && selectedModel ? `Ready (${selectedModel})` : 'Configure API key'}
-                </span>
-              </div>
-            </div>
-
-            {/* Generate Button */}
-            <Button 
-              onClick={handleGenerate} 
-              disabled={!apiKey || !selectedModel || !prompt || isGenerating}
-              className="w-full"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate
-                </>
-              )}
-            </Button>
           </div>
 
-          {/* Quick Examples */}
-          <div className="p-4 flex-1 overflow-y-auto">
-            <h3 className="text-sm font-medium mb-3">Quick Examples</h3>
-            <div className="space-y-2">
-              {[
-                "Create a beautiful hero section with gradient background",
-                "Build a responsive pricing table with 3 tiers",
-                "Design a modern contact form with validation",
-                "Create a dashboard with sidebar navigation",
-                "Build a landing page for a SaaS product"
-              ].map((example, i) => (
-                <Button
-                  key={i}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-left h-auto p-2 text-xs"
-                  onClick={() => setPrompt(example)}
-                >
-                  {example}
-                </Button>
-              ))}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-sm text-gray-500">O que vamos gerar hoje?</div>
+            )}
+            {messages.map((m, idx) => (
+              <div key={idx} className={`rounded-lg p-3 text-sm ${m.role === 'user' ? 'bg-blue-50 text-gray-900 ml-auto max-w-[85%]' : 'bg-gray-50 text-gray-800 mr-auto max-w-[90%]'}`}>
+                {m.content}
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 border-t bg-white">
+            <div className="flex items-center gap-2">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Descreva o que deseja criar..."
+                className="flex-1 text-sm rounded-md border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (!apiKey || !selectedModel || !chatInput.trim()) {
+                    alert('Configure API key, modelo e escreva o prompt')
+                    return
+                  }
+                  const userMsg = { role: 'user' as const, content: chatInput.trim() }
+                  setMessages((prev) => [...prev, userMsg, { role: 'assistant', content: 'Gerando código...' }])
+                  setChatInput('')
+                  setIsGenerating(true)
+                  try {
+                    const history = [...messages, userMsg]
+                    const historyText = history.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')
+                    const instruction = `\n\nGere um único arquivo HTML completo (<!DOCTYPE html> + <html> + <head> + <body>) com CSS e JS embutidos (tags <style> e <script>). Mobile-first, acessível e pronto para produção.\n\nPreferências:\n- Tipo: ${siteType}\n- CSS: ${cssFramework}\n- ÍIcons: ${iconSet}\n- Animações: ${animationLib}\n\nRegras:\n- Inclua os CDNs necessários no <head> de acordo com as preferências.\n- Use semântica, ARIA e navegação por teclado.\n- Evite cercas de markdown.\n- Antes de imprimir, pense e melhore: organização, tokens CSS (variáveis), layouts responsivos, microinterações, performance.\n- Entregue somente o código final, sem explicações.`
+                    const res = await fetch('/api/generate/stream', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ apiKey, model: selectedModel, prompt: historyText + instruction, type: generationType, options: { siteType, cssFramework, iconSet, animationLib, format: 'single-html' } })
+                    })
+                    if (!res.body) {
+                      const fb = await fetch('/api/generate', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ apiKey, model: selectedModel, prompt: historyText + instruction, type: generationType, options: { siteType, cssFramework, iconSet, animationLib, format: 'single-html' } })
+                      })
+                      const data = await fb.json()
+                      if (data.error) throw new Error(data.error)
+                      setGeneratedCode(data.code)
+                    } else {
+                      setGeneratedCode('')
+                      const reader = res.body.getReader()
+                      const decoder = new TextDecoder()
+                      while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) break
+                        const chunk = decoder.decode(value)
+                        const clean = chunk.replaceAll('```', '')
+                        setGeneratedCode(prev => prev + clean)
+                      }
+                    }
+                    setMessages((prev) => {
+                      const copy = [...prev]
+                      copy[copy.length - 1] = { role: 'assistant', content: 'Código atualizado no editor.' }
+                      return copy
+                    })
+                  } catch (e: any) {
+                    setMessages((prev) => {
+                      const copy = [...prev]
+                      copy[copy.length - 1] = { role: 'assistant', content: `Erro: ${e.message}` }
+                      return copy
+                    })
+                  }
+                  setIsGenerating(false)
+                }}
+                disabled={isGenerating}
+                className="shrink-0"
+                aria-label="Enviar"
+              >
+                <Send className={`h-4 w-4 ${isGenerating ? 'opacity-50' : ''}`} />
+              </Button>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className={`w-2 h-2 rounded-full ${apiKey && selectedModel ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span>{apiKey && selectedModel ? `API pronta (${selectedModel})` : 'Configure a API'}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleGenerate} disabled={!apiKey || !selectedModel || isGenerating}>
+                <Sparkles className="h-4 w-4 mr-1" /> Sugerir
+              </Button>
             </div>
           </div>
         </div>
@@ -301,7 +385,7 @@ export default function V0Page() {
               <CodeEditor
                 code={generatedCode}
                 onChange={handleCodeChange}
-                language="typescript"
+                language="html"
               />
             </TabsContent>
 
@@ -315,7 +399,7 @@ export default function V0Page() {
                   <CodeEditor
                     code={generatedCode}
                     onChange={handleCodeChange}
-                    language="typescript"
+                    language="html"
                   />
                 </div>
                 <div className="flex-1">
@@ -343,3 +427,5 @@ export default function V0Page() {
     </div>
   )
 }
+
+

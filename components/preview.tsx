@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ export function Preview({ code }: PreviewProps) {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const refreshPreview = () => {
+  const refreshPreview = useCallback(() => {
     if (!code.trim()) return
     
     setIsLoading(true)
@@ -98,7 +98,7 @@ export function Preview({ code }: PreviewProps) {
       setError(err.message)
       setIsLoading(false)
     }
-  }
+  }, [code])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -106,7 +106,7 @@ export function Preview({ code }: PreviewProps) {
     }, 500) // Debounce updates
 
     return () => clearTimeout(timeoutId)
-  }, [code])
+  }, [code, refreshPreview])
 
   if (!code.trim()) {
     return (

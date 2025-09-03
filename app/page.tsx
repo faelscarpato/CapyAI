@@ -110,6 +110,8 @@ function AgentCard({ agent, showBadge = false }: { agent: any; showBadge?: boole
 }
 
 export default function HomePage() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Navigation */}

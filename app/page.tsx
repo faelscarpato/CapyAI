@@ -149,12 +149,14 @@ export default function HomePage() {
             problem-solving capabilities. Each agent is ready to assist you with specific tasks.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/v0">
-              <Button size="lg" className="text-lg px-8 py-3">
-                Try v0 Clone - Generate UI with AI
-                <Sparkles className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-3"
+              onClick={() => router.push('/v0')}
+            >
+              Try v0 Clone - Generate UI with AI
+              <Sparkles className="ml-2 h-5 w-5" />
+            </Button>
             <Link href="/catalog">
               <Button size="lg" variant="outline" className="text-lg px-8 py-3 bg-transparent">
                 Explore AI Agents

@@ -21,8 +21,9 @@ export function Preview({ code }: PreviewProps) {
     setError(null)
 
     try {
-      // Create a complete HTML document with the React component
-      const htmlContent = `
+      // Detect if the code is a full HTML document; if so, render it directly.
+      const isFullHtml = /<!DOCTYPE html>|<html[\s\S]*?>/i.test(code)
+      const htmlContent = isFullHtml ? code : `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,8 +58,16 @@ export function Preview({ code }: PreviewProps) {
       const componentMatch = transformedCode.match(/function\\s+([A-Z][a-zA-Z0-9]*)/);
       const componentName = componentMatch ? componentMatch[1] : 'Component';
       
-      // Add the component to global scope
-      eval(transformedCode);
+      // Compile TypeScript/JSX to JS and evaluate
+      const compiled = Babel.transform(transformedCode, { presets: ['typescript', 'react'] }).code;
+      eval(compiled);
+
+      // Ensure the component is available on window for ReactDOM.render
+      try {
+        if (!window[componentName]) {
+          window[componentName] = eval(componentName);
+        }
+      } catch (_) {}
       
       // Render the component
       const element = React.createElement(window[componentName] || window.Component || (() => React.createElement('div', null, 'Component not found')));

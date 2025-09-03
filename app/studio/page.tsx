@@ -34,8 +34,16 @@ export default function StudioPage() {
     try {
       const res = await fetch("/api/generate-image", {
         method: "POST",
+        cache: "no-store",
+        credentials: "omit",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, prompt, style, model, output: "image" })
+        body: JSON.stringify({
+          /* consider removing apiKey here if server uses its own key */
+          prompt,
+          style,
+          model,
+          output: "image"
+        })
       })
       const data = await res.json()
       if (!res.ok || data.error) {
